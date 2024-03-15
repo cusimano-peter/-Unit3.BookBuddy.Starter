@@ -1,43 +1,53 @@
 /* TODO - add your code to create a functional React component that renders account details for a logged in user. Fetch the account data from the provided API. You may consider conditionally rendering a message for other users that prompts them to log in or create an account.  */
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect } from "react";
 
 function Account() {
   const [userData, setUserData] = useState(null);
   // Directly get the token from localStorage
-  const token = localStorage.getItem('token');
+  const token = localStorage.getItem("token");
 
   useEffect(() => {
-    if (token) {
-      fetch('/api/users/me', {
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`,
-        },
-      })
-      .then(response => response.json())
-      .then(data => {
-        // Check for errors or if the token is invalid, handle accordingly
-        if (!data.error) {
-          setUserData(data);
-        } else {
-          // Handle error, e.g., invalid token. Perhaps clear it from localStorage
-          console.log(data.message); // Example error handling
-          localStorage.removeItem('token'); // Consider removing the invalid token
+    const fetchUserData = async () => {
+      if (!token) return;
+
+      try {
+        const response = await fetch(
+          "https://fsa-book-buddy-b6e748d1380d.herokuapp.com/api/users/me",
+          {
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${token}`,
+            },
+          }
+        );
+
+        if (!response.ok) {
+          // Handle HTTP errors
+          throw new Error(
+            `Failed to fetch user data. Status: ${response.status}`
+          );
         }
-      })
-      .catch(error => {
-        console.error('Error fetching user data:', error);
-        // Optionally clear token if there's a fetch error, indicating token might be invalid
-        localStorage.removeItem('token');
-      });
-    }
+
+        // Attempt to read the response body as JSON
+        const data = await response.json();
+        setUserData(data);
+        console.log(data);
+      } catch (error) {
+        console.error("Error fetching user data:", error.message);
+      }
+    };
+
+    fetchUserData();
   }, [token]);
 
   if (!token) {
     return (
       <div>
         <p>You must be logged in to view account details.</p>
-        <p><a href="/login">Log In</a> | <a href="/register">Create an Account</a></p>
+        <p>
+          <a href="/login">Log In</a> |{" "}
+          <a href="/register">Create an Account</a>
+        </p>
       </div>
     );
   }
@@ -58,7 +68,9 @@ function Account() {
           <h3>Checked-out Books:</h3>
           <ul>
             {userData.books.map((book) => (
-              <li key={book.id}>{book.title} by {book.author}</li>
+              <li key={book.id}>
+                {book.title} by {book.author}
+              </li>
             ))}
           </ul>
         </>
